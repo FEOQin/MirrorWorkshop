@@ -1,0 +1,8 @@
+name = "mirrorworkshop"
+main = "index.js"
+compatibility_date = "2024-01-01"
+
+# KV 命名空间绑定（请替换为你实际的 KV 命名空间 ID）
+[[kv_namespaces]]
+binding = "B2_KV"
+id = "1d6cb25ceed449459b63ea7bad90a85e"
