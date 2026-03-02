@@ -1,6 +1,15 @@
 // templates/page.js
-// 完整 HTML 页面组装：导入所有模板、嵌入 clientJS 字符串
-import { styles } from './common/styles.js';
+import { global } from './common/styles/global.js';
+import { buttons } from './common/styles/buttons.js';
+import { modals } from './common/styles/modals.js';
+import { tabs } from './common/styles/tabs.js';
+import { search } from './common/styles/search.js';
+import { cards } from './common/styles/cards.js';
+import { popup } from './common/styles/popup.js';
+import { details } from './common/styles/details.js';
+import { admin } from './common/styles/admin.js';
+import { progress } from './common/styles/progress.js';
+import { utils } from './common/styles/utils.js';
 import { headerHTML } from './common/header.js';
 import { footerHTML } from './common/footer.js';
 import { popupHTML } from './common/popup.js';
@@ -12,6 +21,20 @@ import { adminHTML } from './admin/adminIndex.js';
 import { clientJS } from '../client.js';
 
 export function renderFullPage() {
+  const styles = `
+    ${global}
+    ${buttons}
+    ${modals}
+    ${tabs}
+    ${search}
+    ${cards}
+    ${popup}
+    ${details}
+    ${admin}
+    ${progress}
+    ${utils}
+  `;
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
