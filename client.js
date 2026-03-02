@@ -1,5 +1,4 @@
 // client.js
-// 纯字符串导出，所有代码在浏览器中执行
 export const clientJS = `
 (async function() {
     // ============================================================================
@@ -808,7 +807,7 @@ export const clientJS = `
     }
 
     // ============================================================================
-    // 9. 队列信息显示
+    // 9. 队列信息显示（真实数据版本）
     // ============================================================================
 
     const queueMenuBtn = safeGet('queueMenuBtn');
@@ -818,36 +817,40 @@ export const clientJS = `
     const queueFileName = safeGet('queueFileName');
 
     async function updateQueueInfo() {
-        // 模拟队列信息，实际可从后端获取
-        const totalFiles = Math.floor(Math.random() * 100);
-        const remaining = Math.floor(Math.random() * totalFiles);
-        const currentFile = ['nginx.conf', 'Dockerfile', 'src/index.js', 'README.md'][Math.floor(Math.random() * 4)];
-
-        if (queueFileCount && queueFileName) {
-            const showCount = Math.random() > 0.5;
-            if (showCount) {
-                queueFileCount.style.display = 'inline';
-                queueFileName.style.display = 'none';
-                queueFileCount.innerText = \`总文件: \${totalFiles} 剩余: \${remaining}\`;
-            } else {
-                queueFileCount.style.display = 'none';
-                queueFileName.style.display = 'inline';
-                queueFileName.innerText = \`正在上传: \${currentFile}\`;
+        try {
+            const res = await fetch('/api/queue/status');
+            if (!res.ok) throw new Error('Failed to fetch queue status');
+            const data = await res.json();
+            // 期望后端返回 { totalFiles, remaining, currentFile, tasks: [{ name, progress }] }
+            if (queueFileCount && queueFileName) {
+                // 交替显示总文件数和当前文件
+                if (!window.queueInfoToggle) window.queueInfoToggle = 0;
+                window.queueInfoToggle++;
+                if (window.queueInfoToggle % 2 === 0) {
+                    queueFileCount.style.display = 'inline';
+                    queueFileName.style.display = 'none';
+                    queueFileCount.innerText = \`总文件: \${data.totalFiles || 0} 剩余: \${data.remaining || 0}\`;
+                } else {
+                    queueFileCount.style.display = 'none';
+                    queueFileName.style.display = 'inline';
+                    queueFileName.innerText = \`正在上传: \${data.currentFile || '无'}\`;
+                }
             }
-        }
-
-        if (queueTaskList) {
-            // 模拟任务列表
-            queueTaskList.innerHTML = [
-                { name: 'vuejs/core', progress: 45 },
-                { name: 'vercel/next.js', progress: 78 },
-                { name: 'facebook/react', progress: 12 }
-            ].map(task => \`
-                <div class="queue-task-item">
-                    <span class="task-name">\${task.name}</span>
-                    <span class="task-progress">\${task.progress}%</span>
-                </div>
-            \`).join('');
+            if (queueTaskList) {
+                if (data.tasks && data.tasks.length > 0) {
+                    queueTaskList.innerHTML = data.tasks.map(task => \`
+                        <div class="queue-task-item">
+                            <span class="task-name">\${task.name}</span>
+                            <span class="task-progress">\${task.progress}%</span>
+                        </div>
+                    \`).join('');
+                } else {
+                    queueTaskList.innerHTML = '<div class="empty-state">暂无活跃任务</div>';
+                }
+            }
+        } catch (e) {
+            console.error('Failed to update queue info', e);
+            if (queueTaskList) queueTaskList.innerHTML = '<div class="empty-state">队列信息获取失败</div>';
         }
     }
 
