@@ -680,10 +680,13 @@ export const clientJS = `(async function() {
     document.addEventListener('change', (e) => {
         if (e.target.classList.contains('bucket-checkbox')) {
             const index = parseInt(e.target.dataset.index);
+            const card = e.target.closest('.bucket-card');
             if (e.target.checked) {
                 selectedBuckets.add(index);
+                if (card) card.classList.add('selected');
             } else {
                 selectedBuckets.delete(index);
+                if (card) card.classList.remove('selected');
             }
             console.log('当前选中索引:', Array.from(selectedBuckets));
         }
