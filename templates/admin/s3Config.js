@@ -11,12 +11,29 @@ export const s3ConfigHTML = `
     <div id="bucketsList" class="buckets-grid">
         <!-- 桶卡片将动态渲染 -->
     </div>
-    <div style="margin-top: 1rem;" id="snippetsJson">
-        <!-- 这里显示动态生成的Snippets配置 -->
+    
+    <!-- Snippets 规则区域 -->
+    <div style="margin-top: 1.5rem; border-top: 1px solid #e2e8f0; padding-top: 1rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <strong>Snippets 规则 (桶标识映射)</strong>
+            <div>
+                <button class="btn-icon" id="importJsonBtn"><i class="fas fa-upload"></i> 导入JSON</button>
+            </div>
+        </div>
+        <textarea id="snippetsJson" style="width: 100%; height: 150px; font-family: monospace; font-size: 0.9rem; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 8px; resize: vertical;" placeholder="请输入或编辑 JSON 格式的桶标识映射..."></textarea>
+        <div style="margin-top: 0.5rem;">
+            <label class="checkbox-item">
+                <input type="checkbox" id="addHostnameCheck">
+                <span>将桶标识值添加到存储桶自定义主机名（通过 Snippets 代理访问）</span>
+            </label>
+            <p style="color:#64748b; font-size:0.85rem; margin-top:0.2rem;">
+                例如：https://你的域名/<strong>桶标识</strong>/文件路径 将直接指向对应的存储桶
+            </p>
+        </div>
     </div>
 </div>
 
-<!-- 添加/编辑桶的模态框（与之前相同，但增加桶标识字段） -->
+<!-- 添加/编辑桶的模态框 -->
 <div class="modal-overlay" id="bucketModal" style="display: none;">
     <div class="modal-content" style="max-width: 500px;">
         <div class="modal-header">
