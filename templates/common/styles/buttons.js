@@ -80,6 +80,15 @@ export const buttons = `
     background: #e2e8f0;
 }
 
+.btn-danger {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.btn-danger:hover {
+    background: #fecaca;
+}
+
 .btn-download {
     background: #e9f0ff;
     color: #1e4f8a;
