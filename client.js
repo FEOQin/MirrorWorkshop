@@ -46,7 +46,7 @@ export const clientJS = `(async function() {
         } catch (e) { console.error('加载数据失败', e); }
     }
 
-    // 更新后台桶列表（旧版，用于snippets和进度条）
+    // 更新后台桶列表（旧版，用于兼容旧模板）
     function updateBucketsUI() {
         const bucketsJson = safeGet('bucketsJson');
         const bucketList = safeGet('bucketList');
@@ -63,22 +63,24 @@ export const clientJS = `(async function() {
         }
     }
 
-    // 更新后台主机名配置
+    // 更新后台主机名配置和复选框
     function updateConfigUI() {
         const officialHostname = safeGet('officialHostname');
         const bucketHostname = safeGet('bucketHostname');
+        const addHostnameCheck = safeGet('addHostnameCheck');
         if (officialHostname) officialHostname.value = config.officialHostname;
         if (bucketHostname) bucketHostname.value = config.bucketHostname;
+        if (addHostnameCheck) addHostnameCheck.checked = config.addHostnameCheck || false;
     }
 
     // 渲染桶卡片
     function renderBucketsCards() {
         const bucketsList = safeGet('bucketsList');
-        const snippetsJson = safeGet('snippetsJson');
+        const snippetsTextarea = safeGet('snippetsTextarea');
         if (!bucketsList) return;
         if (!buckets || buckets.length === 0) {
             bucketsList.innerHTML = '<div class="empty-state">暂无桶配置，请添加</div>';
-            if (snippetsJson) snippetsJson.innerHTML = '';
+            if (snippetsTextarea) snippetsTextarea.value = '{}';
             return;
         }
 
@@ -115,17 +117,14 @@ export const clientJS = `(async function() {
             });
         });
 
-        // 更新Snippets JSON显示（只显示有id的桶）
-        if (snippetsJson) {
+        // 更新Snippets文本区域（只显示有id的桶）
+        if (snippetsTextarea) {
             const validBuckets = buckets.filter(b => b.id && b.id.trim() !== '');
             const snippets = validBuckets.reduce((acc, b) => {
                 acc[b.customName] = b.id;
                 return acc;
             }, {});
-            snippetsJson.innerHTML = \`<div style="background: #f8fafc; border-radius: 20px; padding: 1rem; font-family: monospace; font-size: 0.9rem;">
-                <strong>Snippets 规则 (桶标识映射)</strong>
-                <pre>\${JSON.stringify(snippets, null, 2)}</pre>
-            </div>\`;
+            snippetsTextarea.value = JSON.stringify(snippets, null, 2);
         }
     }
 
@@ -618,6 +617,9 @@ export const clientJS = `(async function() {
     const bucketsList = safeGet('bucketsList');
     const addBucketBtn = safeGet('addBucketBtn');
     const deleteModeBtn = safeGet('deleteModeBtn');
+    const importSnippetsBtn = safeGet('importSnippetsBtn');
+    const snippetsTextarea = safeGet('snippetsTextarea');
+    const addHostnameCheck = safeGet('addHostnameCheck');
     const bucketModal = safeGet('bucketModal');
     const closeBucketModal = safeGet('closeBucketModal');
     const bucketForm = safeGet('bucketForm');
@@ -680,6 +682,69 @@ export const clientJS = `(async function() {
             }
         }
     });
+
+    // 导入 JSON 按钮事件
+    if (importSnippetsBtn && snippetsTextarea) {
+        importSnippetsBtn.addEventListener('click', () => {
+            try {
+                const jsonText = snippetsTextarea.value.trim();
+                if (!jsonText) {
+                    alert('请输入 JSON 内容');
+                    return;
+                }
+                const imported = JSON.parse(jsonText);
+                if (typeof imported !== 'object' || imported === null) {
+                    alert('JSON 必须是一个对象');
+                    return;
+                }
+                // 遍历导入的键值对，更新现有桶的 id
+                let updated = false;
+                for (const [customName, id] of Object.entries(imported)) {
+                    const bucket = buckets.find(b => b.customName === customName);
+                    if (bucket) {
+                        bucket.id = id;
+                        updated = true;
+                    }
+                }
+                if (updated) {
+                    saveBucketsToAPI().then(() => {
+                        renderBucketsCards();
+                        updateBucketsUI();
+                    });
+                } else {
+                    alert('没有匹配的自定义桶名，未做任何修改');
+                }
+            } catch (e) {
+                alert('JSON 解析失败：' + e.message);
+            }
+        });
+    }
+
+    // 保存配置（包括复选框）
+    function saveConfig() {
+        const newConfig = { ...config };
+        if (addHostnameCheck) newConfig.addHostnameCheck = addHostnameCheck.checked;
+        // 其他字段保持不变，但可以从输入框读取
+        const officialHostname = safeGet('officialHostname');
+        const bucketHostname = safeGet('bucketHostname');
+        if (officialHostname) newConfig.officialHostname = officialHostname.value;
+        if (bucketHostname) newConfig.bucketHostname = bucketHostname.value;
+        
+        fetch(apiBase + '/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newConfig)
+        }).then(res => {
+            if (res.ok) console.log('配置已保存');
+        }).catch(e => console.error('保存配置失败', e));
+    }
+
+    // 监听主机名输入变化自动保存
+    const officialHostname = safeGet('officialHostname');
+    const bucketHostname = safeGet('bucketHostname');
+    if (officialHostname) officialHostname.addEventListener('change', saveConfig);
+    if (bucketHostname) bucketHostname.addEventListener('change', saveConfig);
+    if (addHostnameCheck) addHostnameCheck.addEventListener('change', saveConfig);
 
     // 关闭模态框
     if (closeBucketModal) {
