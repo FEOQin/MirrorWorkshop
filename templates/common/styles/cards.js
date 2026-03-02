@@ -375,4 +375,45 @@ export const cards = `
     border-color: #94a3b8;
     box-shadow: 0 0 0 2px #e2e8f0;
 }
+
+/* 队列详情面板 */
+.queue-detail-panel {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    width: 300px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+    padding: 1rem;
+    z-index: 50;
+    margin-top: 0.5rem;
+}
+
+.queue-detail-panel h4 {
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+}
+
+#queueTaskList {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.queue-task-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.3rem 0;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.85rem;
+}
+
+.queue-task-item .task-name {
+    font-weight: 500;
+}
+
+.queue-task-item .task-progress {
+    color: #64748b;
+}
 `;
