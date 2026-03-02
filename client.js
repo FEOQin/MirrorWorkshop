@@ -30,10 +30,11 @@ export const clientJS = `(async function() {
             config = await configRes.json();
             updateBucketsUI();
             updateConfigUI();
+            renderBucketsList(); // 新增：渲染 S3 桶配置列表
         } catch (e) { console.error('加载数据失败', e); }
     }
 
-    // 更新后台桶列表
+    // 更新后台桶列表（用于 snippets 卡片显示使用量）
     function updateBucketsUI() {
         const bucketsJson = safeGet('bucketsJson');
         const bucketList = safeGet('bucketList');
@@ -57,6 +58,168 @@ export const clientJS = `(async function() {
         if (officialHostname) officialHostname.value = config.officialHostname;
         if (bucketHostname) bucketHostname.value = config.bucketHostname;
     }
+
+    // ---------- 新增：S3 桶配置管理 ----------
+    const bucketsList = safeGet('bucketsList');
+    const addBucketBtn = safeGet('addBucketBtn');
+    const bucketModal = safeGet('bucketModal');
+    const closeBucketModal = safeGet('closeBucketModal');
+    const bucketForm = safeGet('bucketForm');
+    const bucketModalTitle = safeGet('bucketModalTitle');
+    const bucketCustomName = safeGet('bucketCustomName');
+    const bucketKeyID = safeGet('bucketKeyID');
+    const bucketAppKey = safeGet('bucketAppKey');
+    const bucketName = safeGet('bucketName');
+    const bucketEndpoint = safeGet('bucketEndpoint');
+    const bucketId = safeGet('bucketId');
+    const editingIndex = safeGet('editingIndex');
+
+    // 渲染桶配置列表
+    function renderBucketsList() {
+        if (!bucketsList) return;
+        if (!buckets || buckets.length === 0) {
+            bucketsList.innerHTML = '<div class="empty-state" style="padding: 1rem; text-align: center; color: #64748b;">暂无桶配置，请添加</div>';
+            return;
+        }
+        bucketsList.innerHTML = buckets.map((bucket, index) => \`
+            <div class="bucket-item" style="grid-template-columns: 1.5fr 1fr 1fr 1.5fr auto auto; align-items: center; gap: 0.5rem;">
+                <span><strong>\${bucket.customName}</strong></span>
+                <span><code>\${bucket.keyID || '—'}</code></span>
+                <span>\${bucket.bucketName}</span>
+                <span>\${bucket.endpoint}</span>
+                <span>
+                    <button class="btn-icon edit-bucket" data-index="\${index}" title="编辑"><i class="fas fa-edit"></i></button>
+                    <button class="btn-icon delete-bucket" data-index="\${index}" title="删除" style="color:#dc2626;"><i class="fas fa-trash"></i></button>
+                </span>
+            </div>
+        \`).join('');
+
+        // 绑定编辑事件
+        document.querySelectorAll('.edit-bucket').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const index = parseInt(btn.dataset.index);
+                openBucketModal('edit', index);
+            });
+        });
+
+        // 绑定删除事件
+        document.querySelectorAll('.delete-bucket').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const index = parseInt(btn.dataset.index);
+                if (!confirm(\`确定要删除桶 "\${buckets[index].customName}" 吗？\`)) return;
+                buckets.splice(index, 1);
+                await saveBucketsToAPI();
+                renderBucketsList();
+                updateBucketsUI(); // 同步更新 snippets 卡片
+            });
+        });
+    }
+
+    // 打开添加/编辑模态框
+    function openBucketModal(mode, index = -1) {
+        if (!bucketModalTitle || !bucketCustomName || !bucketKeyID || !bucketAppKey || !bucketName || !bucketEndpoint || !bucketId || !editingIndex) return;
+        if (mode === 'add') {
+            bucketModalTitle.innerText = '添加新桶';
+            bucketCustomName.value = '';
+            bucketKeyID.value = '';
+            bucketAppKey.value = '';
+            bucketName.value = '';
+            bucketEndpoint.value = '';
+            bucketId.value = '';
+            editingIndex.value = '-1';
+        } else {
+            const bucket = buckets[index];
+            bucketModalTitle.innerText = '编辑桶';
+            bucketCustomName.value = bucket.customName || '';
+            bucketKeyID.value = bucket.keyID || '';
+            bucketAppKey.value = bucket.applicationKey || '';
+            bucketName.value = bucket.bucketName || '';
+            bucketEndpoint.value = bucket.endpoint || '';
+            bucketId.value = bucket.id || '';
+            editingIndex.value = index;
+        }
+        if (bucketModal) bucketModal.style.display = 'flex';
+    }
+
+    // 保存桶列表到 API
+    async function saveBucketsToAPI() {
+        try {
+            const res = await fetch(apiBase + '/buckets', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(buckets)
+            });
+            if (!res.ok) throw new Error('保存失败');
+            console.log('桶列表已保存');
+        } catch (e) {
+            console.error('保存桶列表失败', e);
+            alert('保存桶列表失败：' + e.message);
+        }
+    }
+
+    // 生成唯一 ID
+    function generateBucketId() {
+        return 'bucket-' + Date.now() + '-' + Math.random().toString(36).substring(2, 8);
+    }
+
+    // 监听添加按钮
+    if (addBucketBtn) {
+        addBucketBtn.addEventListener('click', () => openBucketModal('add'));
+    }
+
+    // 监听模态框关闭
+    if (closeBucketModal) {
+        closeBucketModal.addEventListener('click', () => { if (bucketModal) bucketModal.style.display = 'none'; });
+    }
+    if (bucketModal) {
+        bucketModal.addEventListener('click', (e) => { if (e.target === bucketModal) bucketModal.style.display = 'none'; });
+    }
+
+    // 处理表单提交
+    if (bucketForm) {
+        bucketForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!bucketCustomName || !bucketKeyID || !bucketAppKey || !bucketName || !bucketEndpoint || !editingIndex) return;
+            const customName = bucketCustomName.value.trim();
+            const keyID = bucketKeyID.value.trim();
+            const appKey = bucketAppKey.value.trim();
+            const bktName = bucketName.value.trim();
+            const endpoint = bucketEndpoint.value.trim();
+            const idInput = bucketId ? bucketId.value.trim() : '';
+            const index = parseInt(editingIndex.value);
+
+            if (!customName || !keyID || !appKey || !bktName || !endpoint) {
+                alert('请填写所有必填项');
+                return;
+            }
+
+            const newBucket = {
+                customName,
+                keyID,
+                applicationKey: appKey,
+                bucketName: bktName,
+                endpoint,
+                id: idInput || generateBucketId(),
+                usage: 0,
+                total: 5
+            };
+
+            if (index === -1) {
+                // 添加
+                buckets.push(newBucket);
+            } else {
+                // 编辑，保留原有 usage/total
+                const old = buckets[index];
+                buckets[index] = { ...old, ...newBucket, usage: old.usage, total: old.total };
+            }
+
+            await saveBucketsToAPI();
+            if (bucketModal) bucketModal.style.display = 'none';
+            renderBucketsList();
+            updateBucketsUI(); // 同步更新 snippets 卡片
+        });
+    }
+    // ---------- 桶配置管理结束 ----------
 
     // 登录状态管理
     let isLoggedIn = false;
