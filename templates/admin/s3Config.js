@@ -18,6 +18,7 @@ export const s3ConfigHTML = `
             <strong>Snippets 规则 (桶标识映射)</strong>
             <div>
                 <button class="btn-icon" id="importJsonBtn"><i class="fas fa-upload"></i> 导入JSON</button>
+                <button class="btn-icon" id="saveJsonBtn"><i class="fas fa-save"></i> 保存</button>
             </div>
         </div>
         <textarea id="snippetsJson" style="width: 100%; height: 150px; font-family: monospace; font-size: 0.9rem; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 8px; resize: vertical;" placeholder="请输入或编辑 JSON 格式的桶标识映射..."></textarea>
