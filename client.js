@@ -40,7 +40,6 @@ export const clientJS = `(async function() {
                 total: 10
             }));
 
-            // 不再调用 updateBucketsUI（旧版），直接调用新的渲染函数
             renderBucketsCards();
             updateConfigUI();
         } catch (e) { console.error('加载数据失败', e); }
@@ -175,7 +174,10 @@ export const clientJS = `(async function() {
         if (bucketsList) bucketsList.classList.remove('delete-mode');
         const cancelBtn = document.getElementById('cancelDeleteBtn');
         if (cancelBtn) cancelBtn.remove();
-        if (deleteModeBtn) deleteModeBtn.innerHTML = '<i class="fas fa-trash"></i>';
+        if (deleteModeBtn) {
+            deleteModeBtn.innerHTML = '<i class="fas fa-trash"></i>';
+            deleteModeBtn.classList.remove('btn-danger');
+        }
         selectedBuckets.clear();
         renderBucketsCards(); // 重新渲染以隐藏复选框
     }
@@ -231,7 +233,6 @@ export const clientJS = `(async function() {
         if (homeView) homeView.classList.add('hide');
         if (detailView) detailView.classList.add('hide');
         if (adminPanel) adminPanel.style.display = 'block';
-        // 重新渲染桶卡片（可能在后台显示时）
         renderBucketsCards();
     });
 
@@ -626,11 +627,12 @@ export const clientJS = `(async function() {
                 deleteModeActive = true;
                 const bucketsList = safeGet('bucketsList');
                 if (bucketsList) bucketsList.classList.add('delete-mode');
-                // 改变按钮为“完成”
-                deleteModeBtn.innerHTML = '<i class="fas fa-check"></i> 完成';
-                // 添加取消按钮
+                // 改变按钮为“完成删除”，并设为红色
+                deleteModeBtn.innerHTML = '<i class="fas fa-check"></i> 完成删除';
+                deleteModeBtn.classList.add('btn-danger');
+                // 添加取消按钮（红色）
                 const cancelBtn = document.createElement('button');
-                cancelBtn.className = 'btn-icon';
+                cancelBtn.className = 'btn-icon btn-danger';
                 cancelBtn.id = 'cancelDeleteBtn';
                 cancelBtn.innerHTML = '<i class="fas fa-times"></i> 取消';
                 deleteModeBtn.parentNode.appendChild(cancelBtn);
@@ -694,15 +696,14 @@ export const clientJS = `(async function() {
                 applicationKey: appKey,
                 bucketName: bktName,
                 endpoint,
-                id: idValue || '', // 允许为空
-                usage: Math.random() * 10, // 模拟使用量
+                id: idValue || '',
+                usage: Math.random() * 10,
                 total: 10
             };
 
             if (index === -1) {
                 buckets.push(newBucket);
             } else {
-                // 保留原有的 usage 和 total
                 const old = buckets[index];
                 buckets[index] = { ...old, ...newBucket, usage: old.usage, total: old.total };
             }
@@ -718,15 +719,11 @@ export const clientJS = `(async function() {
         importJsonBtn.addEventListener('click', () => {
             try {
                 const json = JSON.parse(snippetsJson.value);
-                // 将 JSON 转换为桶配置（需要谨慎，这里只演示如何更新）
-                // 假设 JSON 格式为 { "自定义桶名": "桶标识" }
-                // 我们需要更新 buckets 中对应项的 id
                 Object.entries(json).forEach(([customName, id]) => {
                     const bucket = buckets.find(b => b.customName === customName);
                     if (bucket) {
                         bucket.id = id;
                     } else {
-                        // 如果不存在，可以创建新桶？但这里只更新现有
                         console.warn('桶不存在:', customName);
                     }
                 });
