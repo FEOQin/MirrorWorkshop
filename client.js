@@ -1,6 +1,12 @@
 // client.js
-// 前端 JavaScript 逻辑（所有交互、数据获取、轮询），导出为字符串
 export const clientJS = `(async function() {
+    // 安全获取元素，若不存在则返回 null 并打印警告
+    function safeGet(id) {
+        const el = document.getElementById(id);
+        if (!el) console.warn('Element not found:', id);
+        return el;
+    }
+
     const apiBase = '/api';
     let githubProjects = [], dockerProjects = [], buckets = [], config = {};
     let currentTab = 'github', searchMode = 'local';
@@ -9,6 +15,7 @@ export const clientJS = `(async function() {
     let officialCurrentPage = 1, officialTotal = 0, officialLoading = false, officialHasMore = true, officialQuery = '', officialType = 'github';
     let adminCurrentPage = 1, adminTotal = 0, adminLoading = false, adminHasMore = true, adminQuery = '', adminType = 'github';
 
+    // 加载初始数据
     async function loadData() {
         try {
             const [githubRes, dockerRes, bucketsRes, configRes] = await Promise.all([
@@ -26,107 +33,124 @@ export const clientJS = `(async function() {
         } catch (e) { console.error('加载数据失败', e); }
     }
 
+    // 更新后台桶列表
     function updateBucketsUI() {
-        const bucketsJson = document.getElementById('bucketsJson');
-        bucketsJson.innerText = JSON.stringify(buckets.reduce((acc, b) => { acc[b.customName] = b.id; return acc; }, {}), null, 2);
-        const bucketList = document.getElementById('bucketList');
-        bucketList.innerHTML = buckets.map(b => \`
-            <div class="bucket-item">
-                <span>\${b.customName}</span>
-                <span><code>\${b.id}</code></span>
-                <div class="bucket-usage"><div class="progress"><div class="progress-fill" style="width:\${(b.usage/b.total*100).toFixed(1)}%"></div></div><span>\${b.usage} GB / \${b.total} GB</span></div>
-            </div>\`).join('');
-    }
-    function updateConfigUI() {
-        document.getElementById('officialHostname').value = config.officialHostname;
-        document.getElementById('bucketHostname').value = config.bucketHostname;
+        const bucketsJson = safeGet('bucketsJson');
+        const bucketList = safeGet('bucketList');
+        if (bucketsJson) {
+            bucketsJson.innerText = JSON.stringify(buckets.reduce((acc, b) => { acc[b.customName] = b.id; return acc; }, {}), null, 2);
+        }
+        if (bucketList) {
+            bucketList.innerHTML = buckets.map(b => \`
+                <div class="bucket-item">
+                    <span>\${b.customName}</span>
+                    <span><code>\${b.id}</code></span>
+                    <div class="bucket-usage"><div class="progress"><div class="progress-fill" style="width:\${(b.usage/b.total*100).toFixed(1)}%"></div></div><span>\${b.usage} GB / \${b.total} GB</span></div>
+                </div>\`).join('');
+        }
     }
 
-    // 登录状态
+    // 更新后台主机名配置
+    function updateConfigUI() {
+        const officialHostname = safeGet('officialHostname');
+        const bucketHostname = safeGet('bucketHostname');
+        if (officialHostname) officialHostname.value = config.officialHostname;
+        if (bucketHostname) bucketHostname.value = config.bucketHostname;
+    }
+
+    // 登录状态管理
     let isLoggedIn = false;
-    const loginContainer = document.getElementById('loginContainer');
-    const userMenuContainer = document.getElementById('userMenuContainer');
-    const homeView = document.getElementById('homeView');
-    const detailView = document.getElementById('detailView');
-    const adminPanel = document.getElementById('adminPanel');
-    const loginBtn = document.getElementById('loginBtn');
-    const loginModal = document.getElementById('loginModal');
-    const closeLoginModal = document.getElementById('closeLoginModal');
-    const doLogin = document.getElementById('doLogin');
-    const userMenuBtn = document.getElementById('userMenuBtn');
-    const userDropdown = document.getElementById('userDropdown');
-    const goToAdmin = document.getElementById('goToAdmin');
-    const logoutBtn = document.getElementById('logoutBtn');
-    const backHomeBtn = document.getElementById('backHomeBtn');
+    const loginContainer = safeGet('loginContainer');
+    const userMenuContainer = safeGet('userMenuContainer');
+    const homeView = safeGet('homeView');
+    const detailView = safeGet('detailView');
+    const adminPanel = safeGet('adminPanel');
+    const loginBtn = safeGet('loginBtn');
+    const loginModal = safeGet('loginModal');
+    const closeLoginModal = safeGet('closeLoginModal');
+    const doLogin = safeGet('doLogin');
+    const userMenuBtn = safeGet('userMenuBtn');
+    const userDropdown = safeGet('userDropdown');
+    const goToAdmin = safeGet('goToAdmin');
+    const logoutBtn = safeGet('logoutBtn');
+    const backHomeBtn = safeGet('backHomeBtn');
 
     function setLoggedIn(status) {
         isLoggedIn = status;
         if (status) {
-            loginContainer.classList.add('hide');
-            userMenuContainer.classList.remove('hide');
-            homeView.classList.remove('hide');
-            detailView.classList.add('hide');
-            adminPanel.style.display = 'none';
+            if (loginContainer) loginContainer.classList.add('hide');
+            if (userMenuContainer) userMenuContainer.classList.remove('hide');
+            if (homeView) homeView.classList.remove('hide');
+            if (detailView) detailView.classList.add('hide');
+            if (adminPanel) adminPanel.style.display = 'none';
         } else {
-            loginContainer.classList.remove('hide');
-            userMenuContainer.classList.add('hide');
-            homeView.classList.remove('hide');
-            detailView.classList.add('hide');
-            adminPanel.style.display = 'none';
+            if (loginContainer) loginContainer.classList.remove('hide');
+            if (userMenuContainer) userMenuContainer.classList.add('hide');
+            if (homeView) homeView.classList.remove('hide');
+            if (detailView) detailView.classList.add('hide');
+            if (adminPanel) adminPanel.style.display = 'none';
         }
     }
     setLoggedIn(false);
 
-    loginBtn.addEventListener('click', () => loginModal.style.display = 'flex');
-    closeLoginModal.addEventListener('click', () => loginModal.style.display = 'none');
-    loginModal.addEventListener('click', e => { if (e.target === loginModal) loginModal.style.display = 'none'; });
-    doLogin.addEventListener('click', () => { loginModal.style.display = 'none'; setLoggedIn(true); });
+    // 登录相关事件
+    if (loginBtn) loginBtn.addEventListener('click', () => { if (loginModal) loginModal.style.display = 'flex'; });
+    if (closeLoginModal) closeLoginModal.addEventListener('click', () => { if (loginModal) loginModal.style.display = 'none'; });
+    if (loginModal) loginModal.addEventListener('click', e => { if (e.target === loginModal) loginModal.style.display = 'none'; });
+    if (doLogin) doLogin.addEventListener('click', () => { if (loginModal) loginModal.style.display = 'none'; setLoggedIn(true); });
 
-    userMenuBtn.addEventListener('click', e => { e.stopPropagation(); userDropdown.classList.toggle('show'); });
-    document.addEventListener('click', e => { if (!userMenuBtn.contains(e.target)) userDropdown.classList.remove('show'); });
+    // 用户下拉菜单
+    if (userMenuBtn) userMenuBtn.addEventListener('click', e => { e.stopPropagation(); if (userDropdown) userDropdown.classList.toggle('show'); });
+    document.addEventListener('click', e => { if (userMenuBtn && !userMenuBtn.contains(e.target) && userDropdown) userDropdown.classList.remove('show'); });
 
-    goToAdmin.addEventListener('click', () => {
-        userDropdown.classList.remove('show');
-        homeView.classList.add('hide');
-        detailView.classList.add('hide');
-        adminPanel.style.display = 'block';
+    // 进入后台
+    if (goToAdmin) goToAdmin.addEventListener('click', () => {
+        if (userDropdown) userDropdown.classList.remove('show');
+        if (homeView) homeView.classList.add('hide');
+        if (detailView) detailView.classList.add('hide');
+        if (adminPanel) adminPanel.style.display = 'block';
     });
-    backHomeBtn.addEventListener('click', () => {
-        adminPanel.style.display = 'none';
-        homeView.classList.remove('hide');
+
+    // 返回首页
+    if (backHomeBtn) backHomeBtn.addEventListener('click', () => {
+        if (adminPanel) adminPanel.style.display = 'none';
+        if (homeView) homeView.classList.remove('hide');
     });
-    logoutBtn.addEventListener('click', () => { setLoggedIn(false); userDropdown.classList.remove('show'); });
+
+    // 退出登录
+    if (logoutBtn) logoutBtn.addEventListener('click', () => { setLoggedIn(false); if (userDropdown) userDropdown.classList.remove('show'); });
 
     // 自定义项目模态框
-    const openCustomProject = document.getElementById('openCustomProject');
-    const customProjectModal = document.getElementById('customProjectModal');
-    const closeCustomModal = document.getElementById('closeCustomModal');
-    const saveCustomProjects = document.getElementById('saveCustomProjects');
-    openCustomProject.addEventListener('click', () => {
-        const list = document.getElementById('customProjectList');
-        list.innerHTML = githubProjects.concat(dockerProjects).map(p => \`<div class="project-item"><input type="checkbox" value="\${p.name}"> \${p.name}</div>\`).join('');
-        customProjectModal.style.display = 'flex';
+    const openCustomProject = safeGet('openCustomProject');
+    const customProjectModal = safeGet('customProjectModal');
+    const closeCustomModal = safeGet('closeCustomModal');
+    const saveCustomProjects = safeGet('saveCustomProjects');
+    if (openCustomProject) openCustomProject.addEventListener('click', () => {
+        const list = safeGet('customProjectList');
+        if (list) list.innerHTML = githubProjects.concat(dockerProjects).map(p => \`<div class="project-item"><input type="checkbox" value="\${p.name}"> \${p.name}</div>\`).join('');
+        if (customProjectModal) customProjectModal.style.display = 'flex';
     });
-    closeCustomModal.addEventListener('click', () => customProjectModal.style.display = 'none');
-    saveCustomProjects.addEventListener('click', () => { customProjectModal.style.display = 'none'; alert('已保存自定义项目选择（演示）'); });
-    customProjectModal.addEventListener('click', e => { if (e.target === customProjectModal) customProjectModal.style.display = 'none'; });
+    if (closeCustomModal) closeCustomModal.addEventListener('click', () => { if (customProjectModal) customProjectModal.style.display = 'none'; });
+    if (saveCustomProjects) saveCustomProjects.addEventListener('click', () => { if (customProjectModal) customProjectModal.style.display = 'none'; alert('已保存自定义项目选择（演示）'); });
+    if (customProjectModal) customProjectModal.addEventListener('click', e => { if (e.target === customProjectModal) customProjectModal.style.display = 'none'; });
 
     // 首页搜索模式切换
-    const modeToggleBtn = document.getElementById('modeToggleBtn');
-    const modeText = document.getElementById('modeText');
-    const officialBadgeText = document.getElementById('officialBadgeText');
+    const modeToggleBtn = safeGet('modeToggleBtn');
+    const modeText = safeGet('modeText');
+    const officialBadgeText = safeGet('officialBadgeText');
     function toggleSearchMode() {
         searchMode = searchMode === 'local' ? 'official' : 'local';
-        modeText.innerText = searchMode === 'local' ? '存储库' : (currentTab === 'github' ? 'GitHub 搜索' : 'Docker 搜索');
-        document.getElementById('officialResultCard').classList.add('hide');
+        if (modeText) modeText.innerText = searchMode === 'local' ? '存储库' : (currentTab === 'github' ? 'GitHub 搜索' : 'Docker 搜索');
+        const officialCard = safeGet('officialResultCard');
+        if (officialCard) officialCard.classList.add('hide');
     }
-    modeToggleBtn.addEventListener('click', toggleSearchMode);
+    if (modeToggleBtn) modeToggleBtn.addEventListener('click', toggleSearchMode);
 
-    // 官网搜索无限滚动
-    const homeSearchBtn = document.getElementById('homeSearchBtn');
-    const homeSearchInput = document.getElementById('homeSearchInput');
-    const officialCard = document.getElementById('officialResultCard');
-    const officialResultsList = document.getElementById('officialResultsList');
+    // 官网搜索
+    const homeSearchBtn = safeGet('homeSearchBtn');
+    const homeSearchInput = safeGet('homeSearchInput');
+    const officialCard = safeGet('officialResultCard');
+    const officialResultsList = safeGet('officialResultsList');
 
     async function loadOfficialResults(query, type, page) {
         if (officialLoading) return;
@@ -139,7 +163,7 @@ export const clientJS = `(async function() {
         loadingItem.className = 'loading-indicator';
         loadingItem.id = 'official-loading-item';
         loadingItem.innerText = '加载中...';
-        officialResultsList.appendChild(loadingItem);
+        if (officialResultsList) officialResultsList.appendChild(loadingItem);
 
         try {
             const res = await fetch(\`/api/search?q=\${encodeURIComponent(query)}&type=\${type}&page=\${page}\`);
@@ -149,7 +173,7 @@ export const clientJS = `(async function() {
             officialTotal = data.total;
             officialHasMore = newItems.length === 10 && (page * 10) < officialTotal;
 
-            if (page === 1) officialResultsList.innerHTML = '';
+            if (page === 1 && officialResultsList) officialResultsList.innerHTML = '';
             else document.getElementById('official-loading-item')?.remove();
 
             newItems.forEach(item => {
@@ -176,10 +200,10 @@ export const clientJS = `(async function() {
                         </div>
                     </div>
                 \`;
-                officialResultsList.insertAdjacentHTML('beforeend', itemHtml);
+                if (officialResultsList) officialResultsList.insertAdjacentHTML('beforeend', itemHtml);
             });
 
-            if (officialHasMore) {
+            if (officialHasMore && officialResultsList) {
                 const newLoadingItem = document.createElement('div');
                 newLoadingItem.className = 'loading-indicator hide';
                 newLoadingItem.id = 'official-loading-item';
@@ -187,50 +211,52 @@ export const clientJS = `(async function() {
                 officialResultsList.appendChild(newLoadingItem);
             }
 
-            // 绑定 Releases 按钮事件 - 获取完整资产
-            officialResultsList.querySelectorAll('.btn-release').forEach(btn => {
-                btn.addEventListener('click', async (e) => {
-                    e.stopPropagation();
-                    const proj = JSON.parse(e.target.dataset.project);
-                    let releases = [];
-                    if (proj.type === 'github') {
-                        const url = \`https://api.github.com/repos/\${proj.owner}/\${proj.repo}/releases\`;
-                        const res = await fetch(url, {
-                            headers: { 'Accept': 'application/vnd.github.v3+json', 'User-Agent': 'B2-Mirror-Worker' }
-                        });
-                        if (res.ok) {
-                            const data = await res.json();
-                            releases = data.map(r => ({
-                                tag: r.tag_name,
-                                date: r.published_at?.split('T')[0] || r.created_at?.split('T')[0],
-                                assets: r.assets.map(a => ({
-                                    name: a.name,
-                                    size: a.size,
-                                    url: a.browser_download_url
-                                }))
-                            }));
+            // 绑定 Releases 按钮事件
+            if (officialResultsList) {
+                officialResultsList.querySelectorAll('.btn-release').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        e.stopPropagation();
+                        const proj = JSON.parse(e.target.dataset.project);
+                        let releases = [];
+                        if (proj.type === 'github') {
+                            const url = \`https://api.github.com/repos/\${proj.owner}/\${proj.repo}/releases\`;
+                            const res = await fetch(url, {
+                                headers: { 'Accept': 'application/vnd.github.v3+json', 'User-Agent': 'B2-Mirror-Worker' }
+                            });
+                            if (res.ok) {
+                                const data = await res.json();
+                                releases = data.map(r => ({
+                                    tag: r.tag_name,
+                                    date: r.published_at?.split('T')[0] || r.created_at?.split('T')[0],
+                                    assets: r.assets.map(a => ({
+                                        name: a.name,
+                                        size: a.size,
+                                        url: a.browser_download_url
+                                    }))
+                                }));
+                            }
+                        } else {
+                            const url = \`https://hub.docker.com/v2/repositories/library/\${proj.repo}/tags/?page_size=20\`;
+                            const res = await fetch(url, {
+                                headers: { 'Accept': 'application/json', 'User-Agent': 'B2-Mirror-Worker' }
+                            });
+                            if (res.ok) {
+                                const data = await res.json();
+                                releases = data.results.map(t => ({
+                                    tag: t.name,
+                                    date: t.last_updated?.split('T')[0],
+                                    assets: []
+                                }));
+                            }
                         }
-                    } else {
-                        const url = \`https://hub.docker.com/v2/repositories/library/\${proj.repo}/tags/?page_size=20\`;
-                        const res = await fetch(url, {
-                            headers: { 'Accept': 'application/json', 'User-Agent': 'B2-Mirror-Worker' }
-                        });
-                        if (res.ok) {
-                            const data = await res.json();
-                            releases = data.results.map(t => ({
-                                tag: t.name,
-                                date: t.last_updated?.split('T')[0],
-                                assets: []
-                            }));
-                        }
-                    }
-                    const versions = releases.map(r => ({
-                        date: r.date || '未知',
-                        releases: [r]
-                    }));
-                    showReleasesPopup(versions, proj.name, proj.type, 0, true);
+                        const versions = releases.map(r => ({
+                            date: r.date || '未知',
+                            releases: [r]
+                        }));
+                        showReleasesPopup(versions, proj.name, proj.type, 0, true);
+                    });
                 });
-            });
+            }
 
         } catch (error) {
             alert('搜索出错：' + error.message);
@@ -241,76 +267,84 @@ export const clientJS = `(async function() {
         }
     }
 
-    officialResultsList.addEventListener('scroll', () => {
-        if (!officialHasMore || officialLoading) return;
-        const { scrollTop, scrollHeight, clientHeight } = officialResultsList;
-        if (scrollTop + clientHeight >= scrollHeight - 50) {
-            const li = document.getElementById('official-loading-item');
-            if (li) li.classList.remove('hide');
-            officialCurrentPage++;
-            loadOfficialResults(officialQuery, officialType, officialCurrentPage);
-        }
-    });
+    if (officialResultsList) {
+        officialResultsList.addEventListener('scroll', () => {
+            if (!officialHasMore || officialLoading) return;
+            const { scrollTop, scrollHeight, clientHeight } = officialResultsList;
+            if (scrollTop + clientHeight >= scrollHeight - 50) {
+                const li = document.getElementById('official-loading-item');
+                if (li) li.classList.remove('hide');
+                officialCurrentPage++;
+                loadOfficialResults(officialQuery, officialType, officialCurrentPage);
+            }
+        });
+    }
 
-    homeSearchBtn.addEventListener('click', async () => {
-        const query = homeSearchInput.value.trim();
-        if (!query) { alert('请输入搜索关键词'); return; }
-        if (searchMode === 'local') {
-            const allProjects = [...githubProjects, ...dockerProjects];
-            const results = allProjects.filter(p => p.name.toLowerCase().includes(query.toLowerCase()));
-            if (results.length === 0) { alert('未找到本地项目'); return; }
-            officialResultsList.innerHTML = results.map(p => {
-                const type = p.homepage.includes('github') ? 'github' : 'docker';
-                const isGitHub = type === 'github';
-                const bgIconClass = isGitHub ? 'fab fa-github' : 'fab fa-docker';
-                const hasReleases = p.versions && p.versions.some(v => v.releases && v.releases.length > 0);
-                const releaseButton = hasReleases ? \`<button class="btn-icon btn-release" data-project='\${JSON.stringify(p)}'><i class="fas fa-tag"></i> Releases</button>\` : '';
-                return \`
-                    <div class="official-result-item">
-                        <div class="card-bg-icon"><i class="\${bgIconClass}"></i></div>
-                        <div class="official-item-header">
-                            <a href="\${p.homepage}" target="_blank" class="official-item-name">\${p.name}</a>
-                            <div class="official-item-stats">
-                                <span><i class="\${isGitHub ? 'fas fa-code-branch' : 'fas fa-download'}"></i> 0</span>
-                                <span><i class="far fa-star"></i> 0</span>
-                            </div>
-                            <span class="official-item-lastupdate"><i class="far fa-calendar-alt"></i> \${p.lastUpdate}</span>
-                        </div>
-                        <div class="official-item-description">存储库项目</div>
-                        <div class="official-item-actions">
-                            <button class="btn-icon git-link-btn"><i class="far fa-copy"></i> Git链接</button>
-                            <button class="btn-icon btn-download"><i class="fas fa-file-zipper"></i> 下载ZIP</button>
-                            <button class="btn-icon btn-stream"><i class="fas fa-water"></i> 流式</button>
-                            \${releaseButton}
-                        </div>
-                    </div>\`;
-            }).join('');
-            officialCard.classList.remove('hide');
-        } else {
-            officialQuery = query;
-            officialType = currentTab === 'github' ? 'github' : 'docker';
-            officialCurrentPage = 1;
-            officialHasMore = true;
-            officialBadgeText.innerText = currentTab === 'github' ? 'GitHub' : 'Docker';
-            officialCard.classList.remove('hide');
-            await loadOfficialResults(officialQuery, officialType, 1);
-        }
-    });
+    if (homeSearchBtn) {
+        homeSearchBtn.addEventListener('click', async () => {
+            const query = homeSearchInput ? homeSearchInput.value.trim() : '';
+            if (!query) { alert('请输入搜索关键词'); return; }
+            if (searchMode === 'local') {
+                const allProjects = [...githubProjects, ...dockerProjects];
+                const results = allProjects.filter(p => p.name.toLowerCase().includes(query.toLowerCase()));
+                if (results.length === 0) { alert('未找到本地项目'); return; }
+                if (officialResultsList) {
+                    officialResultsList.innerHTML = results.map(p => {
+                        const type = p.homepage.includes('github') ? 'github' : 'docker';
+                        const isGitHub = type === 'github';
+                        const bgIconClass = isGitHub ? 'fab fa-github' : 'fab fa-docker';
+                        const hasReleases = p.versions && p.versions.some(v => v.releases && v.releases.length > 0);
+                        const releaseButton = hasReleases ? \`<button class="btn-icon btn-release" data-project='\${JSON.stringify(p)}'><i class="fas fa-tag"></i> Releases</button>\` : '';
+                        return \`
+                            <div class="official-result-item">
+                                <div class="card-bg-icon"><i class="\${bgIconClass}"></i></div>
+                                <div class="official-item-header">
+                                    <a href="\${p.homepage}" target="_blank" class="official-item-name">\${p.name}</a>
+                                    <div class="official-item-stats">
+                                        <span><i class="\${isGitHub ? 'fas fa-code-branch' : 'fas fa-download'}"></i> 0</span>
+                                        <span><i class="far fa-star"></i> 0</span>
+                                    </div>
+                                    <span class="official-item-lastupdate"><i class="far fa-calendar-alt"></i> \${p.lastUpdate}</span>
+                                </div>
+                                <div class="official-item-description">存储库项目</div>
+                                <div class="official-item-actions">
+                                    <button class="btn-icon git-link-btn"><i class="far fa-copy"></i> Git链接</button>
+                                    <button class="btn-icon btn-download"><i class="fas fa-file-zipper"></i> 下载ZIP</button>
+                                    <button class="btn-icon btn-stream"><i class="fas fa-water"></i> 流式</button>
+                                    \${releaseButton}
+                                </div>
+                            </div>\`;
+                    }).join('');
+                }
+                if (officialCard) officialCard.classList.remove('hide');
+            } else {
+                officialQuery = query;
+                officialType = currentTab === 'github' ? 'github' : 'docker';
+                officialCurrentPage = 1;
+                officialHasMore = true;
+                if (officialBadgeText) officialBadgeText.innerText = currentTab === 'github' ? 'GitHub' : 'Docker';
+                if (officialCard) officialCard.classList.remove('hide');
+                await loadOfficialResults(officialQuery, officialType, 1);
+            }
+        });
+    }
 
-    // 后台项目添加搜索无限滚动
-    const addModeToggle = document.getElementById('addModeToggle');
-    const addModeText = document.getElementById('addModeText');
+    // 后台项目添加搜索
+    const addModeToggle = safeGet('addModeToggle');
+    const addModeText = safeGet('addModeText');
     let addMode = 'GitHub';
-    addModeToggle.addEventListener('click', () => {
-        addMode = addMode === 'GitHub' ? 'Docker' : 'GitHub';
-        addModeText.innerText = addMode;
-    });
+    if (addModeToggle) {
+        addModeToggle.addEventListener('click', () => {
+            addMode = addMode === 'GitHub' ? 'Docker' : 'GitHub';
+            if (addModeText) addModeText.innerText = addMode;
+        });
+    }
 
-    const searchProjectBtn = document.getElementById('searchProjectBtn');
-    const searchProjectInput = document.getElementById('searchProjectInput');
-    const searchResultArea = document.getElementById('searchResultArea');
-    const searchResultList = document.getElementById('searchResultList');
-    const searchResultsScroll = document.getElementById('searchResultsScroll');
+    const searchProjectBtn = safeGet('searchProjectBtn');
+    const searchProjectInput = safeGet('searchProjectInput');
+    const searchResultArea = safeGet('searchResultArea');
+    const searchResultList = safeGet('searchResultList');
+    const searchResultsScroll = safeGet('searchResultsScroll');
 
     async function loadAdminResults(query, type, page) {
         if (adminLoading) return;
@@ -323,7 +357,7 @@ export const clientJS = `(async function() {
         loadingItem.className = 'loading-indicator';
         loadingItem.id = 'admin-loading-item';
         loadingItem.innerText = '加载中...';
-        searchResultsScroll.appendChild(loadingItem);
+        if (searchResultsScroll) searchResultsScroll.appendChild(loadingItem);
 
         try {
             const res = await fetch(\`/api/search?q=\${encodeURIComponent(query)}&type=\${type}&page=\${page}\`);
@@ -333,7 +367,7 @@ export const clientJS = `(async function() {
             adminTotal = data.total;
             adminHasMore = newItems.length === 10 && (page * 10) < adminTotal;
 
-            if (page === 1) searchResultList.innerHTML = '';
+            if (page === 1 && searchResultList) searchResultList.innerHTML = '';
             else document.getElementById('admin-loading-item')?.remove();
 
             newItems.forEach(item => {
@@ -355,10 +389,10 @@ export const clientJS = `(async function() {
                             <button class="save-btn backup-btn" data-name="\${item.name}" data-type="\${item.type}">完整备份</button>
                         </div>
                     </div>\`;
-                searchResultList.insertAdjacentHTML('beforeend', itemHtml);
+                if (searchResultList) searchResultList.insertAdjacentHTML('beforeend', itemHtml);
             });
 
-            if (adminHasMore) {
+            if (adminHasMore && searchResultsScroll) {
                 const newLoadingItem = document.createElement('div');
                 newLoadingItem.className = 'loading-indicator hide';
                 newLoadingItem.id = 'admin-loading-item';
@@ -396,40 +430,45 @@ export const clientJS = `(async function() {
         }
     }
 
-    searchResultsScroll.addEventListener('scroll', () => {
-        if (!adminHasMore || adminLoading) return;
-        const { scrollTop, scrollHeight, clientHeight } = searchResultsScroll;
-        if (scrollTop + clientHeight >= scrollHeight - 50) {
-            const li = document.getElementById('admin-loading-item');
-            if (li) li.classList.remove('hide');
-            adminCurrentPage++;
-            loadAdminResults(adminQuery, adminType, adminCurrentPage);
-        }
-    });
+    if (searchResultsScroll) {
+        searchResultsScroll.addEventListener('scroll', () => {
+            if (!adminHasMore || adminLoading) return;
+            const { scrollTop, scrollHeight, clientHeight } = searchResultsScroll;
+            if (scrollTop + clientHeight >= scrollHeight - 50) {
+                const li = document.getElementById('admin-loading-item');
+                if (li) li.classList.remove('hide');
+                adminCurrentPage++;
+                loadAdminResults(adminQuery, adminType, adminCurrentPage);
+            }
+        });
+    }
 
-    searchProjectBtn.addEventListener('click', async () => {
-        const query = searchProjectInput.value.trim();
-        if (!query) { alert('请输入搜索关键词'); return; }
-        adminQuery = query;
-        adminType = addMode === 'GitHub' ? 'github' : 'docker';
-        adminCurrentPage = 1;
-        adminHasMore = true;
-        searchResultArea.classList.remove('hide');
-        await loadAdminResults(adminQuery, adminType, 1);
-    });
+    if (searchProjectBtn) {
+        searchProjectBtn.addEventListener('click', async () => {
+            const query = searchProjectInput ? searchProjectInput.value.trim() : '';
+            if (!query) { alert('请输入搜索关键词'); return; }
+            adminQuery = query;
+            adminType = addMode === 'GitHub' ? 'github' : 'docker';
+            adminCurrentPage = 1;
+            adminHasMore = true;
+            if (searchResultArea) searchResultArea.classList.remove('hide');
+            await loadAdminResults(adminQuery, adminType, 1);
+        });
+    }
 
-    document.getElementById('monitorSwitch').addEventListener('change', e => console.log('监控开关:', e.target.checked));
+    const monitorSwitch = safeGet('monitorSwitch');
+    if (monitorSwitch) monitorSwitch.addEventListener('change', e => console.log('监控开关:', e.target.checked));
 
     // 首页项目渲染
-    const githubGrid = document.getElementById('githubGrid');
-    const dockerGrid = document.getElementById('dockerGrid');
+    const githubGrid = safeGet('githubGrid');
+    const dockerGrid = safeGet('dockerGrid');
     const tabs = document.querySelectorAll('.tab-item');
 
     function renderGrid() {
-        githubGrid.innerHTML = '';
-        dockerGrid.innerHTML = '';
-        githubProjects.forEach(p => githubGrid.appendChild(createProjectCard(p, 'github')));
-        dockerProjects.forEach(p => dockerGrid.appendChild(createProjectCard(p, 'docker')));
+        if (githubGrid) githubGrid.innerHTML = '';
+        if (dockerGrid) dockerGrid.innerHTML = '';
+        githubProjects.forEach(p => { if (githubGrid) githubGrid.appendChild(createProjectCard(p, 'github')); });
+        dockerProjects.forEach(p => { if (dockerGrid) dockerGrid.appendChild(createProjectCard(p, 'docker')); });
     }
 
     function createProjectCard(proj, type) {
@@ -456,15 +495,19 @@ export const clientJS = `(async function() {
                 \${releasesButton}
             </div>\`;
         const nameLink = card.querySelector('.project-name');
-        nameLink.addEventListener('click', (e) => { e.preventDefault(); showDetail(type, JSON.parse(e.target.dataset.detail)); });
+        if (nameLink) {
+            nameLink.addEventListener('click', (e) => { e.preventDefault(); showDetail(type, JSON.parse(e.target.dataset.detail)); });
+        }
         const releaseBtn = card.querySelector('.btn-release');
-        if (releaseBtn) releaseBtn.addEventListener('click', (e) => { e.stopPropagation(); showReleasesPopup(proj.versions, proj.name, type, 0, false); });
+        if (releaseBtn) {
+            releaseBtn.addEventListener('click', (e) => { e.stopPropagation(); showReleasesPopup(proj.versions, proj.name, type, 0, false); });
+        }
         return card;
     }
 
     function showDetail(type, project) {
-        homeView.classList.add('hide');
-        detailView.classList.remove('hide');
+        if (homeView) homeView.classList.add('hide');
+        if (detailView) detailView.classList.remove('hide');
         let currentVersionIndex = 0;
         const renderDetailContent = (versionIdx) => {
             const version = project.versions[versionIdx];
@@ -488,34 +531,39 @@ export const clientJS = `(async function() {
             const currentDate = project.versions[versionIdx].date;
             return \`<div class="detail-header"><button class="back-btn" id="backBtn"><i class="fas fa-arrow-left"></i> 返回列表</button><h2><i class="\${type === 'github' ? 'fab fa-github' : 'fab fa-docker'}"></i> \${project.name}</h2><div class="version-selector" id="versionSelector"><span id="selectedVersion">\${currentDate}</span><i class="fas fa-chevron-down"></i><div class="version-dropdown" id="versionDropdown">\${versionDates.map((date, idx) => \`<div class="version-item \${idx === versionIdx ? 'current' : ''}" data-version-index="\${idx}">\${date}</div>\`).join('')}</div></div></div>\${filesHtml}\${releasesHtml || ''}<p style="margin-top:1rem; color:#475569;"><i class="fas fa-info-circle"></i> \${type === 'github' ? '文件列表和Releases随版本切换' : '标签列表和Releases随版本切换'}</p>\`;
         };
-        detailView.innerHTML = buildFullHtml(currentVersionIndex);
-        document.getElementById('backBtn').addEventListener('click', () => { detailView.classList.add('hide'); homeView.classList.remove('hide'); });
-        const selector = document.getElementById('versionSelector');
-        const dropdown = document.getElementById('versionDropdown');
-        selector.addEventListener('click', (e) => { e.stopPropagation(); dropdown.classList.toggle('show'); });
-        dropdown.querySelectorAll('.version-item').forEach(item => {
-            item.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const idx = parseInt(item.dataset.versionIndex);
-                if (idx !== currentVersionIndex) {
-                    currentVersionIndex = idx;
-                    detailView.innerHTML = buildFullHtml(currentVersionIndex);
-                    showDetail(type, project);
-                }
-                dropdown.classList.remove('show');
+        if (detailView) detailView.innerHTML = buildFullHtml(currentVersionIndex);
+        const backBtn = safeGet('backBtn');
+        if (backBtn) backBtn.addEventListener('click', () => { if (detailView) detailView.classList.add('hide'); if (homeView) homeView.classList.remove('hide'); });
+        const selector = safeGet('versionSelector');
+        const dropdown = safeGet('versionDropdown');
+        if (selector) {
+            selector.addEventListener('click', (e) => { e.stopPropagation(); if (dropdown) dropdown.classList.toggle('show'); });
+        }
+        if (dropdown) {
+            dropdown.querySelectorAll('.version-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const idx = parseInt(item.dataset.versionIndex);
+                    if (idx !== currentVersionIndex) {
+                        currentVersionIndex = idx;
+                        if (detailView) detailView.innerHTML = buildFullHtml(currentVersionIndex);
+                        showDetail(type, project);
+                    }
+                    if (dropdown) dropdown.classList.remove('show');
+                });
             });
-        });
-        document.addEventListener('click', function closeDropdown(e) { if (selector && !selector.contains(e.target)) dropdown.classList.remove('show'); }, { once: true });
+        }
+        document.addEventListener('click', function closeDropdown(e) { if (selector && !selector.contains(e.target) && dropdown) dropdown.classList.remove('show'); }, { once: true });
     }
 
     // 悬浮窗
-    const popup = document.getElementById('releasesPopup');
-    const popupClose = document.getElementById('popupClose');
-    const popupProjectName = document.getElementById('popupProjectName');
-    const popupSelectedVersion = document.getElementById('popupSelectedVersion');
-    const popupVersionSelector = document.getElementById('popupVersionSelector');
-    const popupVersionDropdown = document.getElementById('popupVersionDropdown');
-    const popupReleasesList = document.getElementById('popupReleasesList');
+    const popup = safeGet('releasesPopup');
+    const popupClose = safeGet('popupClose');
+    const popupProjectName = safeGet('popupProjectName');
+    const popupSelectedVersion = safeGet('popupSelectedVersion');
+    const popupVersionSelector = safeGet('popupVersionSelector');
+    const popupVersionDropdown = safeGet('popupVersionDropdown');
+    const popupReleasesList = safeGet('popupReleasesList');
     let currentVersions = [];
     let currentPopupVersionIdx = 0;
     let currentPopupType = 'github';
@@ -526,35 +574,40 @@ export const clientJS = `(async function() {
         currentPopupVersionIdx = versionIdx;
         currentPopupType = type;
         isOfficialPopup = official;
-        popupProjectName.innerText = projectName;
+        if (popupProjectName) popupProjectName.innerText = projectName;
         const version = versions[versionIdx];
-        popupSelectedVersion.innerText = version.date;
+        if (popupSelectedVersion) popupSelectedVersion.innerText = version.date;
         let dropdownHtml = '';
         versions.forEach((v, idx) => {
             dropdownHtml += \`<div class="version-item-sm \${idx === versionIdx ? 'current' : ''}" data-popup-version="\${idx}">\${v.date}</div>\`;
         });
-        popupVersionDropdown.innerHTML = dropdownHtml;
+        if (popupVersionDropdown) popupVersionDropdown.innerHTML = dropdownHtml;
         renderPopupReleases(version.releases, official);
-        popup.style.display = 'flex';
+        if (popup) popup.style.display = 'flex';
 
-        popupVersionDropdown.querySelectorAll('.version-item-sm').forEach(item => {
-            item.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const newIdx = parseInt(item.dataset.popupVersion);
-                if (newIdx !== currentPopupVersionIdx) {
-                    currentPopupVersionIdx = newIdx;
-                    const newVersion = currentVersions[newIdx];
-                    popupSelectedVersion.innerText = newVersion.date;
-                    renderPopupReleases(newVersion.releases, isOfficialPopup);
-                    popupVersionDropdown.querySelectorAll('.version-item-sm').forEach(el => el.classList.remove('current'));
-                    item.classList.add('current');
-                }
-                popupVersionDropdown.classList.remove('show');
+        if (popupVersionDropdown) {
+            popupVersionDropdown.querySelectorAll('.version-item-sm').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const newIdx = parseInt(item.dataset.popupVersion);
+                    if (newIdx !== currentPopupVersionIdx) {
+                        currentPopupVersionIdx = newIdx;
+                        const newVersion = currentVersions[newIdx];
+                        if (popupSelectedVersion) popupSelectedVersion.innerText = newVersion.date;
+                        renderPopupReleases(newVersion.releases, isOfficialPopup);
+                        if (popupVersionDropdown) {
+                            popupVersionDropdown.querySelectorAll('.version-item-sm').forEach(el => el.classList.remove('current'));
+                            item.classList.add('current');
+                        }
+                    }
+                    if (popupVersionDropdown) popupVersionDropdown.classList.remove('show');
+                });
             });
-        });
+        }
     };
 
     function renderPopupReleases(releases, official = false) {
+        if (!popupReleasesList) return;
         if (!releases || releases.length === 0) {
             popupReleasesList.innerHTML = '<div style="padding: 2rem; text-align: center; color: #64748b;">暂无 Releases 文件</div>';
             return;
@@ -583,16 +636,27 @@ export const clientJS = `(async function() {
         popupReleasesList.innerHTML = html;
     }
 
-    popupVersionSelector.addEventListener('click', (e) => { e.stopPropagation(); popupVersionDropdown.classList.toggle('show'); });
-    popupClose.addEventListener('click', () => popup.style.display = 'none');
-    popup.addEventListener('click', (e) => { if (e.target === popup) popup.style.display = 'none'; });
+    if (popupVersionSelector) {
+        popupVersionSelector.addEventListener('click', (e) => { e.stopPropagation(); if (popupVersionDropdown) popupVersionDropdown.classList.toggle('show'); });
+    }
+    if (popupClose) popupClose.addEventListener('click', () => { if (popup) popup.style.display = 'none'; });
+    if (popup) popup.addEventListener('click', (e) => { if (e.target === popup) popup.style.display = 'none'; });
 
     function setActiveTab(tabId) {
         currentTab = tabId;
         tabs.forEach(t => t.classList.remove('active'));
-        document.querySelector(\`.tab-item[data-tab="\${tabId}"]\`).classList.add('active');
-        if (tabId === 'github') { githubGrid.classList.remove('hide'); dockerGrid.classList.add('hide'); } else { githubGrid.classList.add('hide'); dockerGrid.classList.remove('hide'); }
-        if (searchMode === 'official') modeText.innerText = currentTab === 'github' ? 'GitHub 搜索' : 'Docker 搜索';
+        const activeTab = document.querySelector(\`.tab-item[data-tab="\${tabId}"]\`);
+        if (activeTab) activeTab.classList.add('active');
+        if (tabId === 'github') {
+            if (githubGrid) githubGrid.classList.remove('hide');
+            if (dockerGrid) dockerGrid.classList.add('hide');
+        } else {
+            if (githubGrid) githubGrid.classList.add('hide');
+            if (dockerGrid) dockerGrid.classList.remove('hide');
+        }
+        if (searchMode === 'official' && modeText) {
+            modeText.innerText = currentTab === 'github' ? 'GitHub 搜索' : 'Docker 搜索';
+        }
     }
 
     tabs.forEach(tab => tab.addEventListener('click', () => setActiveTab(tab.dataset.tab)));
@@ -600,7 +664,7 @@ export const clientJS = `(async function() {
     await loadData();
     renderGrid();
     setActiveTab('github');
-    modeText.innerText = '存储库';
+    if (modeText) modeText.innerText = '存储库';
 
     // 轮询任务状态
     function pollTaskStatus(taskId) {
