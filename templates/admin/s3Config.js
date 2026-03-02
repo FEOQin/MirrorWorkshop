@@ -5,7 +5,7 @@ export const s3ConfigHTML = `
         <h2>S3 存储桶配置</h2>
         <div style="display: flex; gap: 0.5rem;">
             <button class="btn-icon" id="addBucketBtn"><i class="fas fa-plus"></i> 添加新桶</button>
-            <button class="btn-icon" id="deleteModeBtn" title="批量删除"><i class="fas fa-trash"></i></button>
+            <button class="btn-icon btn-danger" id="deleteModeBtn" title="批量删除"><i class="fas fa-trash"></i></button>
         </div>
     </div>
     <div id="bucketsList" class="buckets-grid">
