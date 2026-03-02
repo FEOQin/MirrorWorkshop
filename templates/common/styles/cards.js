@@ -270,14 +270,14 @@ export const cards = `
     box-shadow: 0 8px 16px rgba(0,0,0,0.1);
 }
 
-/* 选中状态 */
-.bucket-card.selected {
-    border: 2px solid #3b82f6;
-    box-shadow: 0 0 0 2px rgba(59,130,246,0.2);
-}
-
 .bucket-card.delete-mode {
     /* 删除模式下的样式 */
+}
+
+/* 选中卡片的样式 */
+.bucket-card.bucket-card-selected {
+    border: 2px solid #2563eb;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
 }
 
 .bucket-card .progress-bg {
