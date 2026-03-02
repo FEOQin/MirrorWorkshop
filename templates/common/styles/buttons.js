@@ -80,15 +80,6 @@ export const buttons = `
     background: #e2e8f0;
 }
 
-.btn-danger {
-    background: #fee2e2;
-    color: #b91c1c;
-}
-
-.btn-danger:hover {
-    background: #fecaca;
-}
-
 .btn-download {
     background: #e9f0ff;
     color: #1e4f8a;
@@ -127,5 +118,20 @@ export const buttons = `
 
 .back-home-btn:hover {
     background: #e2e8f0;
+}
+
+/* 新增红色按钮样式 */
+.btn-danger {
+    background: #dc2626;
+    color: white;
+    border: none;
+}
+
+.btn-danger:hover {
+    background: #b91c1c;
+}
+
+.btn-danger i {
+    color: white;
 }
 `;
