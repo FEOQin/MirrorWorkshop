@@ -40,7 +40,6 @@ export const clientJS = `(async function() {
                 total: 10
             }));
 
-            // 不再调用 updateBucketsUI（旧版），直接调用新的渲染函数
             renderBucketsCards();
             updateConfigUI();
         } catch (e) { console.error('加载数据失败', e); }
@@ -73,12 +72,15 @@ export const clientJS = `(async function() {
             else if (usagePercent >= 60) bgColorClass = 'orange';
             else if (usagePercent >= 40) bgColorClass = 'yellow';
 
+            // 如果处于删除模式且该索引被选中，则添加选中类
+            const selectedClass = selectedBuckets.has(index) ? 'bucket-card-selected' : '';
+
             return \`
-                <div class="bucket-card \${isDeleteMode ? 'delete-mode' : ''}" data-index="\${index}">
+                <div class="bucket-card \${isDeleteMode ? 'delete-mode' : ''} \${selectedClass}" data-index="\${index}">
                     <div class="progress-bg \${bgColorClass}" style="width: \${usagePercent}%;"></div>
                     <div class="percentage">\${usagePercent.toFixed(1)}%</div>
                     <div class="checkbox">
-                        <input type="checkbox" class="bucket-checkbox" data-index="\${index}">
+                        <input type="checkbox" class="bucket-checkbox" data-index="\${index}" \${selectedBuckets.has(index) ? 'checked' : ''}>
                     </div>
                     <div class="bucket-content">
                         <span class="bucket-name">\${bucket.customName}</span>
@@ -99,7 +101,7 @@ export const clientJS = `(async function() {
                     const checkbox = card.querySelector('.bucket-checkbox');
                     if (checkbox) {
                         checkbox.checked = !checkbox.checked;
-                        // 手动触发 change 事件以更新 selectedBuckets
+                        // 手动触发 change 事件以更新 selectedBuckets 和样式
                         const changeEvent = new Event('change', { bubbles: true });
                         checkbox.dispatchEvent(changeEvent);
                     }
@@ -190,11 +192,15 @@ export const clientJS = `(async function() {
         deleteModeActive = false;
         const bucketsList = safeGet('bucketsList');
         if (bucketsList) bucketsList.classList.remove('delete-mode');
+        // 移除所有卡片的选中类
+        document.querySelectorAll('.bucket-card').forEach(card => {
+            card.classList.remove('bucket-card-selected');
+        });
         const cancelBtn = document.getElementById('cancelDeleteBtn');
         if (cancelBtn) cancelBtn.remove();
         if (deleteModeBtn) {
             deleteModeBtn.innerHTML = '<i class="fas fa-trash"></i>';
-            deleteModeBtn.classList.remove('btn-danger');
+            // 保持红色，不删除 btn-danger 类
         }
         selectedBuckets.clear();
         renderBucketsCards(); // 重新渲染以隐藏复选框
@@ -630,6 +636,7 @@ export const clientJS = `(async function() {
     const bucketIdInput = safeGet('bucketId');
     const editingIndex = safeGet('editingIndex');
     const importJsonBtn = safeGet('importJsonBtn');
+    const saveJsonBtn = safeGet('saveJsonBtn');
     const snippetsJson = safeGet('snippetsJson');
     const addHostnameCheck = safeGet('addHostnameCheck');
 
@@ -681,12 +688,14 @@ export const clientJS = `(async function() {
         if (e.target.classList.contains('bucket-checkbox')) {
             const index = parseInt(e.target.dataset.index);
             const card = e.target.closest('.bucket-card');
-            if (e.target.checked) {
-                selectedBuckets.add(index);
-                if (card) card.classList.add('selected');
-            } else {
-                selectedBuckets.delete(index);
-                if (card) card.classList.remove('selected');
+            if (card) {
+                if (e.target.checked) {
+                    card.classList.add('bucket-card-selected');
+                    selectedBuckets.add(index);
+                } else {
+                    card.classList.remove('bucket-card-selected');
+                    selectedBuckets.delete(index);
+                }
             }
             console.log('当前选中索引:', Array.from(selectedBuckets));
         }
@@ -738,7 +747,11 @@ export const clientJS = `(async function() {
 
             await saveBucketsToAPI();
             if (bucketModal) bucketModal.style.display = 'none';
-            renderBucketsCards();
+            if (deleteModeActive) {
+                exitDeleteMode();
+            } else {
+                renderBucketsCards();
+            }
         });
     }
 
@@ -762,6 +775,29 @@ export const clientJS = `(async function() {
                 renderBucketsCards();
                 saveBucketsToAPI();
                 alert('JSON 已导入并更新桶标识');
+            } catch (e) {
+                alert('JSON 格式错误：' + e.message);
+            }
+        });
+    }
+
+    // 保存 JSON 功能
+    if (saveJsonBtn && snippetsJson) {
+        saveJsonBtn.addEventListener('click', () => {
+            try {
+                const json = JSON.parse(snippetsJson.value);
+                // 更新 buckets 中对应项的 id
+                Object.entries(json).forEach(([customName, id]) => {
+                    const bucket = buckets.find(b => b.customName === customName);
+                    if (bucket) {
+                        bucket.id = id;
+                    } else {
+                        console.warn('桶不存在:', customName);
+                    }
+                });
+                renderBucketsCards();
+                saveBucketsToAPI();
+                alert('Snippets 配置已保存');
             } catch (e) {
                 alert('JSON 格式错误：' + e.message);
             }
