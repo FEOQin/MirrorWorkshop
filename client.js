@@ -89,6 +89,24 @@ export const clientJS = `(async function() {
         }).join('');
         bucketsList.innerHTML = cardsHtml;
 
+        // 为每个桶卡片添加点击事件（在删除模式下切换复选框）
+        document.querySelectorAll('.bucket-card').forEach(card => {
+            card.addEventListener('click', (e) => {
+                // 如果点击的是编辑图标或复选框本身，不处理
+                if (e.target.classList.contains('edit-icon') || e.target.classList.contains('bucket-checkbox')) return;
+                const isDeleteMode = bucketsList.classList.contains('delete-mode');
+                if (isDeleteMode) {
+                    const checkbox = card.querySelector('.bucket-checkbox');
+                    if (checkbox) {
+                        checkbox.checked = !checkbox.checked;
+                        // 手动触发 change 事件以更新 selectedBuckets
+                        const changeEvent = new Event('change', { bubbles: true });
+                        checkbox.dispatchEvent(changeEvent);
+                    }
+                }
+            });
+        });
+
         // 绑定编辑图标事件
         document.querySelectorAll('.edit-icon').forEach(icon => {
             icon.addEventListener('click', (e) => {
