@@ -270,6 +270,12 @@ export const cards = `
     box-shadow: 0 8px 16px rgba(0,0,0,0.1);
 }
 
+/* 选中状态 */
+.bucket-card.selected {
+    border: 2px solid #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59,130,246,0.2);
+}
+
 .bucket-card.delete-mode {
     /* 删除模式下的样式 */
 }
@@ -310,7 +316,6 @@ export const cards = `
     cursor: pointer;
     padding: 0.3rem;
     border-radius: 50%;
-    z-index: 3;
 }
 
 .bucket-card:hover .edit-icon {
@@ -332,17 +337,14 @@ export const cards = `
     opacity: 0.15;
     z-index: 1;
     color: #1e293b;
-    pointer-events: none;
 }
 
 .bucket-card .checkbox {
     position: absolute;
     top: 0.5rem;
     left: 0.5rem;
-    z-index: 5;
+    z-index: 2;
     display: none;
-    width: 20px;
-    height: 20px;
 }
 
 .bucket-card.delete-mode .checkbox {
