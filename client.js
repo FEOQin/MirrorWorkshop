@@ -807,7 +807,7 @@ export const clientJS = `
     }
 
     // ============================================================================
-    // 9. 队列信息显示（真实数据版本）
+    // 9. 队列信息显示（处理 404 优雅降级）
     // ============================================================================
 
     const queueMenuBtn = safeGet('queueMenuBtn');
@@ -819,7 +819,12 @@ export const clientJS = `
     async function updateQueueInfo() {
         try {
             const res = await fetch('/api/queue/status');
-            if (!res.ok) throw new Error('Failed to fetch queue status');
+            if (!res.ok) {
+                if (res.status === 404) {
+                    throw new Error('QUEUE_NOT_ENABLED');
+                }
+                throw new Error('Failed to fetch queue status');
+            }
             const data = await res.json();
             // 期望后端返回 { totalFiles, remaining, currentFile, tasks: [{ name, progress }] }
             if (queueFileCount && queueFileName) {
@@ -850,7 +855,23 @@ export const clientJS = `
             }
         } catch (e) {
             console.error('Failed to update queue info', e);
-            if (queueTaskList) queueTaskList.innerHTML = '<div class="empty-state">队列信息获取失败</div>';
+            if (e.message === 'QUEUE_NOT_ENABLED') {
+                // 队列服务未启用，停止轮询并显示提示
+                stopQueueInfoPolling();
+                if (queueTaskList) {
+                    queueTaskList.innerHTML = '<div class="empty-state">队列监控未启用</div>';
+                }
+                if (queueFileCount && queueFileName) {
+                    queueFileCount.style.display = 'none';
+                    queueFileName.style.display = 'inline';
+                    queueFileName.innerText = '队列未启用';
+                }
+            } else {
+                // 其他错误，显示错误信息但不停止轮询（可保留重试）
+                if (queueTaskList) {
+                    queueTaskList.innerHTML = '<div class="empty-state">队列信息获取失败</div>';
+                }
+            }
         }
     }
 
