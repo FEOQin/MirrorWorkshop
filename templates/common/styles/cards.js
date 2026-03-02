@@ -350,4 +350,23 @@ export const cards = `
     height: 18px;
     cursor: pointer;
 }
+
+/* Snippets 文本域 */
+#snippetsJson {
+    width: 100%;
+    height: 150px;
+    font-family: monospace;
+    font-size: 0.9rem;
+    padding: 0.5rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    resize: vertical;
+    background: #f8fafc;
+}
+
+#snippetsJson:focus {
+    outline: none;
+    border-color: #94a3b8;
+    box-shadow: 0 0 0 2px #e2e8f0;
+}
 `;
