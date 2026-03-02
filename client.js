@@ -64,8 +64,8 @@ export const clientJS = `
     function updateConfigUI() {
         const officialHostname = safeGet('officialHostname');
         const bucketHostname = safeGet('bucketHostname');
-        if (officialHostname) officialHostname.value = config.officialHostname;
-        if (bucketHostname) bucketHostname.value = config.bucketHostname;
+        if (officialHostname) officialHostname.value = config.officialHostname || '';
+        if (bucketHostname) bucketHostname.value = config.bucketHostname || '';
     }
 
     // ============================================================================
@@ -807,7 +807,7 @@ export const clientJS = `
     }
 
     // ============================================================================
-    // 9. 队列信息显示（处理 404 优雅降级）
+    // 9. 队列信息显示（处理 404 优雅降级，不输出错误）
     // ============================================================================
 
     const queueMenuBtn = safeGet('queueMenuBtn');
@@ -854,9 +854,8 @@ export const clientJS = `
                 }
             }
         } catch (e) {
-            console.error('Failed to update queue info', e);
             if (e.message === 'QUEUE_NOT_ENABLED') {
-                // 队列服务未启用，停止轮询并显示提示
+                // 队列服务未启用，停止轮询并显示提示，不打印错误
                 stopQueueInfoPolling();
                 if (queueTaskList) {
                     queueTaskList.innerHTML = '<div class="empty-state">队列监控未启用</div>';
@@ -866,8 +865,11 @@ export const clientJS = `
                     queueFileName.style.display = 'inline';
                     queueFileName.innerText = '队列未启用';
                 }
+                // 用 console.log 记录一次，便于调试
+                console.log('队列监控未启用，已停止轮询');
             } else {
-                // 其他错误，显示错误信息但不停止轮询（可保留重试）
+                // 其他错误，显示错误信息但不停止轮询
+                console.error('Failed to update queue info', e);
                 if (queueTaskList) {
                     queueTaskList.innerHTML = '<div class="empty-state">队列信息获取失败</div>';
                 }
@@ -1136,7 +1138,7 @@ export const clientJS = `
     }
 
     // ============================================================================
-    // 14. 事件绑定（登录等）
+    // 14. 事件绑定（登录、主机名保存等）
     // ============================================================================
 
     if (loginBtn) loginBtn.addEventListener('click', () => { if (loginModal) loginModal.style.display = 'flex'; });
@@ -1180,6 +1182,33 @@ export const clientJS = `
 
     const monitorSwitch = safeGet('monitorSwitch');
     if (monitorSwitch) monitorSwitch.addEventListener('change', e => console.log('监控开关:', e.target.checked));
+
+    // 主机名保存
+    const saveHostnameBtn = safeGet('saveHostnameBtn');
+    if (saveHostnameBtn) {
+        saveHostnameBtn.addEventListener('click', async () => {
+            const officialHostname = safeGet('officialHostname');
+            const bucketHostname = safeGet('bucketHostname');
+            const newConfig = {
+                ...config,
+                officialHostname: officialHostname ? officialHostname.value : '',
+                bucketHostname: bucketHostname ? bucketHostname.value : ''
+            };
+            try {
+                const res = await fetch(apiBase + '/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newConfig)
+                });
+                if (!res.ok) throw new Error('保存失败');
+                config = newConfig; // 更新本地配置
+                alert('主机名配置已保存');
+            } catch (e) {
+                console.error('保存主机名失败', e);
+                alert('保存失败：' + e.message);
+            }
+        });
+    }
 
     // 全局演示提示
     document.addEventListener('click', (e) => {
