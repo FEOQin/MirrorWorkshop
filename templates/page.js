@@ -4,6 +4,8 @@ import { styles } from './common/styles.js';
 import { headerHTML } from './common/header.js';
 import { footerHTML } from './common/footer.js';
 import { popupHTML } from './common/popup.js';
+import { loginModalHTML } from './common/loginModal.js';
+import { customProjectModalHTML } from './common/customProjectModal.js';
 import { homeHTML } from './home/homeIndex.js';
 import { detailHTML } from './home/detail.js';
 import { adminHTML } from './admin/adminIndex.js';
@@ -27,6 +29,8 @@ export function renderFullPage() {
         ${detailHTML}
         ${adminHTML}
         ${popupHTML}
+        ${loginModalHTML}
+        ${customProjectModalHTML}
     </div>
     ${footerHTML}
     <script>${clientJS}</script>
