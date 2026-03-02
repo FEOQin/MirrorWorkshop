@@ -1,17 +1,22 @@
 // templates/admin/s3Config.js
-// S3 存储桶配置卡片
 export const s3ConfigHTML = `
 <div class="card">
     <div class="card-header">
         <h2>S3 存储桶配置</h2>
-        <button class="btn-icon" id="addBucketBtn"><i class="fas fa-plus"></i> 添加新桶</button>
+        <div style="display: flex; gap: 0.5rem;">
+            <button class="btn-icon" id="addBucketBtn"><i class="fas fa-plus"></i> 添加新桶</button>
+            <button class="btn-icon" id="deleteModeBtn" title="批量删除"><i class="fas fa-trash"></i></button>
+        </div>
     </div>
-    <div id="bucketsList" class="bucket-list">
-        <!-- 桶列表将动态渲染 -->
+    <div id="bucketsList" class="buckets-grid">
+        <!-- 桶卡片将动态渲染 -->
+    </div>
+    <div style="margin-top: 1rem;" id="snippetsJson">
+        <!-- 这里显示动态生成的Snippets配置 -->
     </div>
 </div>
 
-<!-- 添加/编辑桶的模态框 -->
+<!-- 添加/编辑桶的模态框（与之前相同，但增加桶标识字段） -->
 <div class="modal-overlay" id="bucketModal" style="display: none;">
     <div class="modal-content" style="max-width: 500px;">
         <div class="modal-header">
@@ -40,9 +45,9 @@ export const s3ConfigHTML = `
                 <input type="text" id="bucketEndpoint" placeholder="例如: s3.ca-east-006.backblazeb2.com" required>
             </div>
             <div class="input-group">
-                <label>桶标识 (ID) <small>留空则自动生成</small></label>
-                <input type="text" id="bucketId" placeholder="例如: default" disabled>
-                <small style="color:#64748b;">用于内部引用，不可重复</small>
+                <label>桶标识 (可选)</label>
+                <input type="text" id="bucketId" placeholder="留空则不在Snippets中显示">
+                <small style="color:#64748b;">填写后将在Snippets规则中显示为键名</small>
             </div>
             <input type="hidden" id="editingIndex" value="-1">
             <button type="submit" class="modal-btn" id="saveBucketBtn">保存</button>
