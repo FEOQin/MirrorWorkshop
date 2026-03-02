@@ -211,12 +211,21 @@ export const clientJS = `(async function() {
                 officialResultsList.appendChild(newLoadingItem);
             }
 
-            // 绑定 Releases 按钮事件
+            // 使用事件委托处理 Releases 按钮点击
             if (officialResultsList) {
-                officialResultsList.querySelectorAll('.btn-release').forEach(btn => {
-                    btn.addEventListener('click', async (e) => {
-                        e.stopPropagation();
-                        const proj = JSON.parse(e.target.dataset.project);
+                officialResultsList.addEventListener('click', async (e) => {
+                    const btn = e.target.closest('.btn-release');
+                    if (!btn) return;
+                    e.stopPropagation();
+                    
+                    const projectData = btn.dataset.project;
+                    if (!projectData) {
+                        console.error('No project data found on Releases button');
+                        return;
+                    }
+                    
+                    try {
+                        const proj = JSON.parse(projectData);
                         let releases = [];
                         if (proj.type === 'github') {
                             const url = \`https://api.github.com/repos/\${proj.owner}/\${proj.repo}/releases\`;
@@ -254,7 +263,9 @@ export const clientJS = `(async function() {
                             releases: [r]
                         }));
                         showReleasesPopup(versions, proj.name, proj.type, 0, true);
-                    });
+                    } catch (err) {
+                        console.error('Failed to parse project data', err);
+                    }
                 });
             }
 
