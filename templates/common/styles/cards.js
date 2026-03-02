@@ -310,6 +310,7 @@ export const cards = `
     cursor: pointer;
     padding: 0.3rem;
     border-radius: 50%;
+    z-index: 3;
 }
 
 .bucket-card:hover .edit-icon {
@@ -331,14 +332,17 @@ export const cards = `
     opacity: 0.15;
     z-index: 1;
     color: #1e293b;
+    pointer-events: none;
 }
 
 .bucket-card .checkbox {
     position: absolute;
     top: 0.5rem;
     left: 0.5rem;
-    z-index: 2;
+    z-index: 5;
     display: none;
+    width: 20px;
+    height: 20px;
 }
 
 .bucket-card.delete-mode .checkbox {
